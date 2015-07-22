@@ -6,7 +6,6 @@ class Ship(object):
     def __init__(self, size):
         self.size = size
         self.status = "alive"
-        self.player = ""
         self.hits = []
         self.location = []
 
@@ -14,32 +13,25 @@ class Ship(object):
         self.status = "dead"
 
 class Player(object):
-    def __init__(self,ships):
+    def __init__(self):
         self.sunk = []
-        self.ships = ships
+        self.ships = []
         self.placed_ships = []
         self.board = []
 
-    def ship_sunk(self,num):
-        self.sunk =+ num
+        def create_fleet():
+            small_ships = [Ship(1) for i in range(1)]
+            for ship in small_ships:
+                self.ships.append(ship)
+            medium_ships = [Ship(2) for i in range(1)]
+            for ship in medium_ships:
+                self.ships.append(ship)
+            large_ships = [Ship(3) for i in range(1)]
+            for ship in large_ships:
+                self.ships.append(ship)
+        create_fleet()
 
 
-
-ship1 = Ship(2)
-ship2 = Ship(1)
-ship3 = Ship(3)
-ship4 = Ship(1)
-ship5 = Ship(1)
-ship6 = Ship(1)
-
-ships1 = [ship1, ship2, ship3]
-ships2 = [ship4, ship5, ship6]
-
-
-player1 = Player(ships1)
-player2 = Player(ships2)
-
-players = [player1,player2]
 
 def generate_board(player):
     for x in range(7):
@@ -86,7 +78,7 @@ def select_direction(rand, point):
         0: [point[0], point[1] - 1, 0],  # left
         1: [point[0], point[1] + 1, 1],  # right
         2: [point[0] - 1, point[1], 2],  # up
-        3: [point[0] + 1, point[1], 3]  # down"
+        3: [point[0] + 1, point[1], 3]  # down
     }
     return switcher.get(rand, False)
 
@@ -144,14 +136,14 @@ def guess_and_check(player):
                     if sum(player.sunk) == len(player.ships):
                         player.board[guess_row][guess_col] = "X"
                         return 0
-                    else:
+                    elif player.ships[ship].size == len(player.ships[ship].hits):
                         print "You sunk a Battlship!"
                         player.board[guess_row][guess_col] = "X"
                         break
-                else:
-                    print "Hit!"
-                    player.board[guess_row][guess_col] = "X"
-                    break
+            else:
+                print "Hit!"
+                player.board[guess_row][guess_col] = "X"
+                break
         elif guess_total not in player.placed_ships:
             print "You missed my battleship!"
             player.board[guess_row][guess_col] = "O"
@@ -162,6 +154,7 @@ def guess_and_check(player):
 def play_game():
     player_count = int(raw_input("1 or 2 players?:"))
     if player_count == 1:
+        player1 = Player()
         generate_board(player1)
         generate_ships(player1)
         for turn in range(49):
@@ -171,8 +164,10 @@ def play_game():
                 print "You sunk their last Battlship! You Won!"
                 break
     elif player_count == 2:
+        player1 = Player()
         generate_board(player1)
         generate_ships(player1)
+        player2 = Player()
         generate_board(player2)
         generate_ships(player2)
         for turn in range(98):
