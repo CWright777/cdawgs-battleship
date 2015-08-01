@@ -201,7 +201,6 @@ class Game(object):
     def start(self):
         self.determine_player_count()
         self.generate_assets()
-        self.players[0].show_ship_locations()
         self.play_game()
 
 
