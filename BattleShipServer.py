@@ -7,25 +7,10 @@ from random import choice
 
 
 class Ship(object):
-    def __init__(self):
+    def __init__(self, size):
         self.hits = []
         self.location = []
-        self.status = "alive"
-
-    def update_status(self):
-        self.status = "dead"
-
-
-class SmallShip(Ship):
-    size = 1
-
-
-class MediumShip(Ship):
-    size = 2
-
-
-class LargeShip(Ship):
-    size = 3
+        self.size = size
 
 
 class Board(object):
@@ -33,64 +18,19 @@ class Board(object):
         self.placed_ships = []
         self.board = []
         self.size = size
+        self.free_locations = []
 
     def generate_board(self):
         for col in range(self.size):
             self.board.append(["?"] * self.size)
+        for row in range(self.size):
+            self.free_locations.append([])
+            for col in range(self.size):
+                self.free_locations[row].append([row, col])
 
     def print_board(self):
         for row in self.board:
             print " ".join(row)
-
-    # Generate a random row
-    def random_row(self):
-        return randint(0, len(self.board) - 1)
-
-    # Generate a random column
-    def random_col(self):
-        return randint(0, len(self.board[0]) - 1)
-
-    # Used to find a free space on the board
-    def find_free_space(self):
-        point = [self.random_row()] + [self.random_col()]
-        while True:
-            if point in self.placed_ships:
-                point = [self.random_row()] + [self.random_col()]
-            else:
-                return point
-
-    # select direction is used to find a point that is left, right, up or down.
-    @staticmethod
-    def select_direction(direction, point):
-        switcher = {
-            "left": [point[0], point[1] - 1, 0],  # left
-            "right": [point[0], point[1] + 1, 1],  # right
-            "up": [point[0] - 1, point[1], 2],  # up
-            "down": [point[0] + 1, point[1], 3]  # down
-        }
-        return switcher.get(choice(direction))
-
-    # Used to find a point that is adjacent to a given point
-    def find_adjacent_space(self, point, hor_ver):
-        unused_directions = ["left", "right", "up", "down"]
-        if hor_ver == "hor":
-            del unused_directions[2:4]
-        elif hor_ver == "ver":
-            del unused_directions[0:2]
-        while True:
-            direction = self.select_direction(unused_directions, choice(point))
-            while True:
-                try:
-                    if direction[0] <= -1 or direction[0] >= self.size or direction[1] <= -1 or \
-                            direction[1] == self.size:
-                        del unused_directions[direction[3]]
-                        direction = self.select_direction(choice(unused_directions), choice(point))
-                    elif direction[0:2] in self.placed_ships or direction[0:2] in point:
-                        direction = self.select_direction(choice(unused_directions), choice(point))
-                    else:
-                        return direction
-                except IndexError:
-                    return Exception
 
 
 class Player(object):
@@ -100,10 +40,22 @@ class Player(object):
         self.board = Board(7)
         self.name = name
 
-    def build(self, quantity, model):
-        fleet = [model() for i in range(quantity)]
+    def build(self, quantity, size):
+        fleet = [Ship(size) for i in range(quantity)]
         for ship in fleet:
             self.ships.append(ship)
+
+    @staticmethod
+    def possible_space(distance, axis, size):
+        try:
+            possible_space = []
+            if axis - distance > - 1:
+                possible_space.append(axis - distance)
+            if axis + distance > size - 1:
+                possible_space.append(axis + distance)
+            return choice(possible_space)
+        except IndexError:
+            return IndexError
 
 # generate_ships loops through each ship in the list ships. Then it selects a ranndom point from the board. Saves that
 # point and then finds adjacent points as needed by the ship's ship size.
@@ -111,23 +63,37 @@ class Player(object):
         for ship in self.ships:
             while True:
                 try:
-                    point = self.board.find_free_space()
+                    row = randint(0, self.board.size - 1)
+                    col = randint(0, self.board.size - 1)
+                    point = self.board.free_locations[row][col]
                     ship.location.append(point)
                     if ship.size > 1:
-                        direction = self.board.find_adjacent_space(ship.location, "any")
+                        rand = randint(0, 1)
+                        print rand
+                        if rand == 0:
+                            direction = self.board.free_locations[row][self.possible_space(1, col, self.board.size)]
+                        elif rand  == 1:
+                            direction = self.board.free_locations[self.possible_space(1, row, self.board.size)][col]
                         ship.location.append(direction[0:2])
+                        print ship.location
                         if ship.size > 2:
-                            for next_point in range(ship.size - 2):
-                                if direction[2] == 0 or direction[2] == 1:
-                                    next_point = self.board.find_adjacent_space(ship.location, "hor")
-                                    ship.location.append(next_point[0:2])
-                                elif direction[2] == 2 or direction[2] == 3:
-                                    next_point = self.board.find_adjacent_space(ship.location, "ver")
-                                    ship.location.append(next_point[0:2])
-                    break
+                            if rand == 0:
+                                next_point = self.board.free_locations[direction[0]][self.possible_space(1, direction[1], self.board.size)]
+                                print next_point
+                                ship.location.append(next_point[0:2])
+                                break
+                            elif rand == 1:
+                                next_point = self.board.free_locations[self.possible_space(1, direction[0], self.board.size)][direction[1]]
+                                print next_point
+                                ship.location.append(next_point[0:2])
+                                break
+                    else:
+                        break
                 except Exception:
                     ship.location = []
             for coordinate in ship.location:
+                if coordinate in self.board.free_locations:
+                    self.board.free_locations.remove(coordinate)
                 self.board.placed_ships.append(coordinate)
 
     # Show where ships are generated for debugging purposes
@@ -135,16 +101,6 @@ class Player(object):
         for point in self.board.placed_ships:
             self.board.board[point[0]][point[1]] = "B"
         self.board.print_board()
-
-    @staticmethod
-    def input_guess(prompt):
-        while True:
-            guess = raw_input(prompt)
-            try:
-                if guess < 0 or guess > 6:
-                    return int(guess)
-            except ValueError:
-                print "Try again, that didn't seem like a usable number!"
 
     @staticmethod
     def guess_and_check(guess_total, player):
@@ -182,9 +138,9 @@ class Game(object):
     @staticmethod
     def generate_assets(player):
             player.board.generate_board()
-            player.build(0, SmallShip)
-            player.build(0, MediumShip)
-            player.build(1, LargeShip)
+            player.build(0, 1)
+            player.build(0, 2)
+            player.build(4, 3)
             player.generate_ships()
 
     header_struct = struct.Struct('!I')
@@ -221,10 +177,10 @@ class Game(object):
             except Exception:
                 return block
 
-    def get_player_count(self):
+    def thread(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(('', 6668))
+        sock.bind(('', 6669))
         sock.listen(5)
         print('Listening at', sock.getsockname())
         print('Waiting for a connection')
@@ -261,7 +217,20 @@ class Game(object):
 
     def start(self):
         for turn in range(50):
-            self.get_player_count()
+            self.thread()
 
-game1 = Game()
-game1.start()
+game = Game()
+game.start()
+
+'''
+    # select direction is used to find a point that is left, right, up or down.
+    @staticmethod
+    def select_direction(direction, point):
+        switcher = {
+            "left": [point[0], point[1] - 1, 0],  # left
+            "right": [point[0], point[1] + 1, 1],  # right
+            "up": [point[0] - 1, point[1], 2],  # up
+            "down": [point[0] + 1, point[1], 3]  # down
+        }
+        return switcher.get(choice(direction))
+'''

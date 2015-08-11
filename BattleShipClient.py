@@ -53,7 +53,7 @@ def what_name():
 
 def client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(('localhost', 6668))
+    sock.connect(('localhost', 6669))
     put_block(sock,  what_name())
     put_block(sock, b'')
     while True:
@@ -64,20 +64,20 @@ def client():
             message = block
         if message == "nope":
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect(('localhost', 6668))
+            sock.connect(('localhost', 6669))
             put_block(sock, what_name())
             put_block(sock, b'')
         else:
             break
     sock.close()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(('localhost', 6668))
+    sock.connect(('localhost', 6669))
     put_block(sock, struct.pack('!5s2I', "count", get_player_count(), 0))
     put_block(sock, b'')
     sock.close()
     for turn in range(50):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(('localhost', 6668))
+        sock.connect(('localhost', 6669))
         put_block(sock, struct.pack('!5s2I', "guess", input_guess("Guess Row:"), input_guess("Guess Col:")))
         put_block(sock, b'')
         while True:
